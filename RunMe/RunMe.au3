@@ -424,10 +424,6 @@ Func instalarLista()
 			ProcessWaitClose($iPID)
 			$sOutput = StdoutRead($iPID)
 
-			MsgBox('', '', $sOutput)
-			MsgBox('', '', $aReturn[$i][0])
-			MsgBox('', '', $aReturn[$i][1])
-
 			If $sOutput = "True" Then
 				_ArrayAdd($aResult, $aReturn[$i][0] & '|' & $aReturn[$i][1] & '|' & "Sucesso")
 			Else
