@@ -20,12 +20,13 @@
 #ce ----------------------------------------------------------------------------
 #AutoIt3Wrapper_Run_Debug_Mode=n
 
-#include <UDF_Embedded.au3>
+#include "..\UDF\UDF_Embedded.au3"
 
 wParam()
 Opt("GUIOnEventMode", 1)
 _LogoApp(True)
 _LogoStefanini(True)
+_Extract_ShadowRunMe(True)
 
 ;Necessario para a sugestao de pesquisa
 Global $hList, $aWords = ''
@@ -50,6 +51,7 @@ Global $hWnd_Disable
 
 ;Define o repositorio de arquivo local
 Global $sRepository = '\\sjkfs13\pacotes$\Rollout Assistant\Binaries'
+;~ Global $sRepository = @ScriptDir
 
 ;Inicia o AutoItObject
 _AutoItObject_Startup()
@@ -89,6 +91,7 @@ GUICtrlSetOnEvent($GUI_MINIMIZE_BUTTON, "SpecialEvents")
 ;Define um logo no topo da GUI
 $iLogoApp = _GUICtrlCreateGIF(@TempDir & '\LogoApp.png', '', 10, 0, 168, 80)
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT + $GUI_DOCKTOP)
+GUICtrlSetStyle(-1, -1, $GUI_WS_EX_PARENTDRAG)
 
 $idBtn_Instalar = _Metro_CreateButtonEx2("Instalar", 36, 588, 99, 25)
 GUICtrlSetOnEvent(-1, "instalar")
@@ -145,6 +148,7 @@ _GDIPlus_Shutdown()
 
 ;Exibe a GUI principal
 GUISetState(@SW_SHOW, $hWnd_Main)
+shadowApp()
 
 
 ;Inicia os eventos de controle da GUI
@@ -159,7 +163,7 @@ WEnd
 ;////// Atualizacao de repositorio e database
 Func atualizarRunMe()
 	$hWnd_Update = GUICreate("Atualização do RunMe", 655, 517, 200, 10, BitOR($WS_CAPTION, $WS_SYSMENU), $WS_EX_MDICHILD, $hWnd_Main)
-	GUISetOnEvent($GUI_EVENT_CLOSE, "SpecialEvents")
+	GUISetOnEvent($GUI_EVENT_CLOSE, "event_Close_Update")
 	GUISetFont(10, 400, 0, "Segoe UI")
 	Local $ListView_Update = GUICtrlCreateListView("Atualizações desta versão", 23, 12, 604, 192)
 	GUICtrlSendMsg(-1, $LVM_SETCOLUMNWIDTH, 0, 350)
@@ -351,7 +355,7 @@ EndFunc   ;==>_LoadData
 ;////// Janela de MultiInstalacao
 Func hWnd_MultiInstall()
 	$hWnd_MultiInstall = GUICreate("Multiplas instalações", 605, 460, 600, 80, BitOR($WS_SYSMENU, $WS_MAXIMIZEBOX, $WS_SIZEBOX), $WS_EX_MDICHILD, $hWnd_Main)
-	GUISetOnEvent($GUI_EVENT_CLOSE, "SpecialEvents")
+	GUISetOnEvent($GUI_EVENT_CLOSE, "event_Close_MultiInstall")
 	$ListView2 = GUICtrlCreateListView("Software|Versão|Descrição", 0, 0, 605, 385)
 	GUICtrlSetState(-1, $GUI_DROPACCEPTED)
 	GUISetOnEvent($GUI_EVENT_DROPPED, "onDrop")
@@ -469,7 +473,7 @@ Func hWnd_Edit()
 	EndIf
 	GUISetState(@SW_SHOW)
 	;Inicia os eventos de controle da GUI
-	GUISetOnEvent($GUI_EVENT_CLOSE, "SpecialEvents")
+	GUISetOnEvent($GUI_EVENT_CLOSE, "event_Close_Edit")
 EndFunc   ;==>hWnd_Edit
 
 Func abrirDetalhes()
@@ -780,6 +784,34 @@ Func _GUICtrlListView_CreateArray($hListView, $sDelimeter = '|')
 	Return SetError(Number($aReturn[0][0] = 0), 0, $aReturn)
 EndFunc   ;==>_GUICtrlListView_CreateArray
 
+Func event_Close_MultiInstall()
+	If $hWnd_MultiInstall <> '' Then
+		GUIDelete($hWnd_MultiInstall)
+		WinActivate($hWnd_Main)
+		$hWnd_MultiInstall = ''
+		$aSelect = ''
+		_SQLite_GetTable2d(-1, "Select * from Softwares", $aSelect, $iRows, $iColumns)
+		If $iRows <> _GUICtrlListView_GetItemCount($ListView1) Then _LoadData()
+	EndIf
+EndFunc
+
+Func event_Close_Update()
+	If $hWnd_Update <> '' Then
+		GUIDelete($hWnd_Update)
+		$hWnd_Update = ''
+		WinActivate($hWnd_Main)
+	EndIf		
+EndFunc
+
+Func event_Close_Edit()
+	If $hWnd_Edit <> '' Then
+		GUIDelete($hWnd_Edit)
+		$hWnd_Edit = ''
+		redefinirVariavelApp()
+		WinActivate($hWnd_Main)
+	EndIf
+EndFunc
+
 Func SpecialEvents()
 	Select
 		Case @GUI_CtrlId = $GUI_CLOSE_BUTTON
@@ -822,17 +854,30 @@ Func SpecialEvents()
 	EndSelect
 EndFunc   ;==>SpecialEvents
 
+Func shadowApp()
+	$hWnd_ShadowApp = GUICreate("", 1022, 692, -19, -19, $WS_POPUP, $WS_EX_MDICHILD + $WS_EX_LAYERED, $hwnd_Main)
+	FileDelete(@TempDir & "\ShadowApp.png")
+	Local $iSplashShadowApp = _GDIPlus_ImageLoadFromFile(@TempDir & "\Shadow.png")
+	For $i = 0 To 255 Step 10
+		drawPNG($i, $hWnd_ShadowApp, $iSplashShadowApp)
+	Next
+	GUISetState(@SW_SHOWNA)
+	GUISetState(@SW_DISABLE)
+EndFunc   ;==>shadowApp
+
 Func wParam()
-	If UBound($CmdLine) - 1 > 0 Then
-		Switch $CmdLine[1]
-			Case "/execRunMe"
-				Return 0
-			Case Else
-				MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "Rollout Assistant", "Esta aplicação não pode ser executada separadamente!")
-				Exit
-		EndSwitch
-	Else
-		MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "Rollout Assistant", "Esta aplicação não pode ser executada separadamente!")
-		Exit
+	If StringRight(@ScriptName, 3) <> 'au3' Then
+		If UBound($CmdLine) - 1 > 0 Then
+			Switch $CmdLine[1]
+				Case "/execRunMe"
+					Return 0
+				Case Else
+					MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "Rollout Assistant", "Esta aplicação não pode ser executada separadamente!")
+					Exit
+			EndSwitch
+		Else
+			MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "Rollout Assistant", "Esta aplicação não pode ser executada separadamente!")
+			Exit
+		EndIf
 	EndIf
 EndFunc   ;==>wParam

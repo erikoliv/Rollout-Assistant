@@ -18,7 +18,7 @@
 
 ; Script Start - Add your code below here
 
-#include <UDF_Embedded.au3>
+#include "..\UDF\UDF_Embedded.au3"
 Opt("GUIOnEventMode", 1)
 _LogoStefanini(True)
 _BaseButton(True)
