@@ -27,6 +27,7 @@ Opt("GUIOnEventMode", 1)
 _LogoApp(True)
 _LogoStefanini(True)
 _Extract_ShadowRunMe(True)
+_SQLiteDLL(True)
 
 ;Necessario para a sugestao de pesquisa
 Global $hList, $aWords = ''
