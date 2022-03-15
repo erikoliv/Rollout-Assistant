@@ -22,7 +22,7 @@
 
 #include "..\UDF\UDF_Embedded.au3"
 
-;~ wParam()
+wParam()
 Opt("GUIOnEventMode", 1)
 _LogoApp(True)
 _LogoStefanini(True)
@@ -293,7 +293,7 @@ Func instalar()
 		_SQLite_GetTable2d(-1, StringFormat("Select Repository, UserName from Softwares Where Name Like '%s' And Version Like '%s'", $aGetItem[1], $aGetItem[2]), $aSelect, $iRows, $iColumns)
 		_DBStop()
 		If UBound($aSelect) - 1 > 0 Then
-;~ _GUIDisable($hWnd_Main)
+
 			Local $aGetPos = WinGetPos($hWnd_Main)
 			Local $hWnd_FormStatus = GUICreate("", 461, 235, 250, 197, $WS_POPUPWINDOW, $WS_EX_MDICHILD, $hWnd_Main)
 			Local $aGetPos = WinGetPos($hWnd_FormStatus)
@@ -302,7 +302,7 @@ Func instalar()
 			GUICtrlCreateLabel(StringFormat("Instalando %s.....", $aGetItem[1]), 0, 91, $aGetPos[2] - 2, 21, $SS_CENTER)
 			Local $idProgress1 = GUICtrlCreateProgress(104, 121, 252, 11, 0x8)
 			_SendMessage(GUICtrlGetHandle($idProgress1), $PBM_SETMARQUEE, 1, 30)
-;~ WinSetTrans($hWnd_Main, '', 150)
+
 			GUISetState(@SW_SHOW)
 			Sleep(2000)
 
@@ -313,8 +313,6 @@ Func instalar()
 			EndIf
 			GUIDelete($hWnd_FormStatus)
 
-;~ _GUIDisable($hWnd_Main, '')
-;~ WinSetTrans($hWnd_Main, '', 255)
 			WinActivate($hWnd_Main)
 		EndIf
 	EndIf
