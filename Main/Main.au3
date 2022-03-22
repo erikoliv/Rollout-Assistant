@@ -1,3 +1,10 @@
+#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_Icon=..\..\..\..\Downloads\Stefanini_Globe.ico
+#AutoIt3Wrapper_Compression=4
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.0
+#AutoIt3Wrapper_Res_Language=1033
+#AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
+#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #NoTrayIcon
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\..\..\Desktop\Stefanini_Globe.ico
@@ -19,6 +26,7 @@
 ; Script Start - Add your code below here
 
 #include "..\UDF\UDF_Embedded.au3"
+_SessionClean()
 Opt("GUIOnEventMode", 1)
 _LogoStefanini(True)
 _BaseButton(True)
@@ -29,7 +37,7 @@ Global $idBtn[10], $iP = 0
 Global $idBtn_RunMe = 0x1
 
 _DBStart()
-    _SQLite_Exec(-1, StringFormat("Insert Into LoggedInUsers VALUES('%s', '%s', '%s')", StringUpper($analystName), StringUpper(@ComputerName), StringUpper(_Now())))
+    _SQLite_Exec(-1, StringFormat("Insert Into LoggedInUsers VALUES('%s', '%s', '%s', '%s')", StringUpper($analystName), StringUpper(@ComputerName), StringUpper(_Now()), @YDAY))
 _DBStop()
 
 hwnd_Main()
@@ -129,5 +137,11 @@ Func SpecialEvents()
 
 	EndSelect
 EndFunc   ;==>SpecialEvents
+
+Func _SessionClean()
+	_DBStart()
+		_SQLite_Exec(-1, 'DELETE FROM LoggedInUsers where YearDay < "'&  @YDAY & '"')
+	_DBStop()
+EndFunc
 
 

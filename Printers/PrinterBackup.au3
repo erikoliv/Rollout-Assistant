@@ -1,4 +1,13 @@
-﻿#NoTrayIcon
+﻿#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_Icon=..\..\..\..\Downloads\Stefanini_Globe.ico
+#AutoIt3Wrapper_Compression=4
+#AutoIt3Wrapper_Res_Language=1033
+#AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
+#AutoIt3Wrapper_Res_HiDpi=y
+#AutoIt3Wrapper_Run_Au3Stripper=y
+#Au3Stripper_Parameters=/so /rm /pe
+#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
+#NoTrayIcon
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\..\..\Desktop\Stefanini_Globe.ico
 #AutoIt3Wrapper_Compression=4
@@ -23,7 +32,6 @@ wParam()
 
 #AutoIt3Wrapper_Run_Debug_Mode=n
 
-;~ #include <UDF_Embedded.au3>
 #include "..\UDF\UDF_Embedded.au3"
 
 ;Extrai arquivos necessária para utilização no software
@@ -191,7 +199,7 @@ Func _installPrinter()
 			GUISetBkColor($COLOR_WHITE)
 			GUISetFont(10, 400, 0, "Segoe UI")
 			$lblInstall = GUICtrlCreateLabel("Instalando", 0, 80, $aGetPos[2] - 2, 50, $SS_CENTER)
-			Local $idProgress1 = GUICtrlCreateProgress(104, 121, 252, 11, 0x8)
+			Local $idProgress1 = GUICtrlCreateProgress(104, 121, 252, 11, 0x8, $WS_EX_LAYOUTRTL)
 			_SendMessage(GUICtrlGetHandle($idProgress1), $PBM_SETMARQUEE, 1, 30)
 			;~ WinSetTrans($Form1, '', 150)
 			GUISetState(@SW_SHOW)
@@ -247,7 +255,7 @@ Func _registerPrinterOnDB()
 					
 					GUICtrlSetData($lblInstall, "Salvando" & @CRLF & $sPrinterItem)
 					_DBStart()
-					_SQLite_GetTable2d(-1, 'Select Printer from Printers Where UserName = "' & StringUpper($userName) & '" AND AnalystName = "' & $analystName & '"', $aSelect, $iRows, $iColumns)
+					_SQLite_GetTable2d(-1, 'Select Printer from Printers Where UserName = "' & StringUpper($userName) & '" AND AnalystName = "' & StringUpper($analystName) & '"', $aSelect, $iRows, $iColumns)
 					_DBStop()
 
 					$sCheckExist = False
@@ -260,7 +268,7 @@ Func _registerPrinterOnDB()
 
 					If $sCheckExist = False Then
 						_DBStart()
-						_SQLite_Exec(-1, StringFormat("Insert Into Printers VALUES('%s', '%s', '%s')", $sPrinterItem, StringUpper($userName), $analystName))
+						_SQLite_Exec(-1, StringFormat("Insert Into Printers VALUES('%s', '%s', '%s')", $sPrinterItem, StringUpper($userName), StringUpper($analystName)))
 						_DBStop()
 						GUICtrlCreateListViewItem($sPrinterItem, $ListView_BackupedPrinters)
 					EndIf

@@ -1,7 +1,7 @@
 #NoTrayIcon
 #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Icon=..\..\..\..\Desktop\Stefanini_Globe.ico
+#AutoIt3Wrapper_Icon=..\..\..\..\Downloads\Stefanini_Globe.ico
 #AutoIt3Wrapper_Compression=4
 #AutoIt3Wrapper_Res_Language=1033
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
@@ -147,15 +147,16 @@ _LoadData()
 _GDIPlus_Shutdown()
 ;~ GUIDelete($hWnd_ShowApp)
 
-;Exibe a GUI principal
-GUISetState(@SW_SHOW, $hWnd_Main)
-shadowApp()
-
-
 ;Inicia os eventos de controle da GUI
 GUISetOnEvent($GUI_EVENT_CLOSE, "SpecialEvents")
 GUISetOnEvent($GUI_EVENT_MINIMIZE, "SpecialEvents")
 GUISetOnEvent($GUI_EVENT_RESTORE, "SpecialEvents")
+
+;Exibe a GUI principal
+shadowApp()
+GUISetState(@SW_SHOW, $hWnd_Main)
+
+
 
 While 1
 	Sleep(10)
@@ -260,21 +261,46 @@ EndFunc   ;==>novoItem
 Func remover()
 	Local $aGetItem = _GUICtrlListView_GetItemTextArray($ListView1)
 	Local $aIndex = _GUICtrlListView_GetSelectedIndices($ListView1)
-	If $aGetItem[1] <> '' Then
-		Local $sTarget = StringFormat("\" & $sRepository & '\Repository\%s_%s', $aGetItem[1], $aGetItem[2])
-		Local $iQuestion = MsgBox(262144 + 32 + 4, 'RunMe', 'Tem certeza que deseja remover o item ' & $aGetItem[1] & '?', 30, $hWnd_Main)
-		If $iQuestion = 6 Then
-			DirRemove($sTarget, 1)
-			If Not FileExists($sTarget) Then
-				_DBStart()
-				_SQLite_Exec(-1, StringFormat("Delete from Softwares Where Name like '%s' And Version like '%s'", $aGetItem[1], $aGetItem[2]))
-				_DBStop()
-				_GUICtrlListView_DeleteItemsSelected($ListView1)
-				GUICtrlSetData($ListView1, 'Software (' & _GUICtrlListView_GetItemCount($ListView1) & ')|Versão|Descrição')
+	If $aGetItem[1] <> '' And $aGetItem[2] <> '' Then
+		_DBStart()
+		_SQLite_GetTable2d(-1, "Select UserName from Softwares Where Name like '%" & $aGetItem[1] & "%' AND Version like '%" & $aGetItem[2] & "%'", $aSelect, $iRows, $iColumns)
+		_DBStop()
+		If $aSelect[1][0] = "SYSTEM" Then
+			_AD_Open()
+			If _AD_IsMemberOf("SJK-DM") Then
+				Local $sTarget = StringFormat("\" & $sRepository & '\Repository\%s_%s', $aGetItem[1], $aGetItem[2])
+				Local $iQuestion = MsgBox(262144 + 32 + 4, 'RunMe', 'Tem certeza que deseja remover o item ' & $aGetItem[1] & '?', 30, $hWnd_Main)
+				If $iQuestion = 6 Then
+					DirRemove($sTarget, 1)
+					If Not FileExists($sTarget) Then
+						_DBStart()
+						_SQLite_Exec(-1, StringFormat("Delete from Softwares Where Name like '%s' And Version like '%s'", $aGetItem[1], $aGetItem[2]))
+						_DBStop()
+						_GUICtrlListView_DeleteItemsSelected($ListView1)
+						GUICtrlSetData($ListView1, 'Software (' & _GUICtrlListView_GetItemCount($ListView1) & ')|Versão|Descrição')
+					Else
+						MsgBox(262144 + 16, 'RunMe', 'Houve um erro ao tentar remover o item selecionado', 30, $hWnd_Main)
+					EndIf
+				Else
+					MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "RunMe", "Você não possui permissão para deletar este item!")
+				EndIf
 			Else
-				MsgBox(262144 + 16, 'RunMe', 'Houve um erro ao tentar remover o item selecionado', 30, $hWnd_Main)
-
+				Local $sTarget = StringFormat("\" & $sRepository & '\Repository\%s_%s', $aGetItem[1], $aGetItem[2])
+				Local $iQuestion = MsgBox(262144 + 32 + 4, 'RunMe', 'Tem certeza que deseja remover o item ' & $aGetItem[1] & '?', 30, $hWnd_Main)
+				If $iQuestion = 6 Then
+					DirRemove($sTarget, 1)
+					If Not FileExists($sTarget) Then
+						_DBStart()
+						_SQLite_Exec(-1, StringFormat("Delete from Softwares Where Name like '%s' And Version like '%s'", $aGetItem[1], $aGetItem[2]))
+						_DBStop()
+						_GUICtrlListView_DeleteItemsSelected($ListView1)
+						GUICtrlSetData($ListView1, 'Software (' & _GUICtrlListView_GetItemCount($ListView1) & ')|Versão|Descrição')
+					Else
+						MsgBox(262144 + 16, 'RunMe', 'Houve um erro ao tentar remover o item selecionado', 30, $hWnd_Main)
+					EndIf
+				EndIf
 			EndIf
+			_AD_Close()
 		EndIf
 	EndIf
 EndFunc   ;==>remover
@@ -308,13 +334,21 @@ Func instalar()
 			Sleep(2000)
 
 			If $aSelect[1][1] = "SYSTEM" Then
-				RunWait(StringFormat('%s\%s', $sRepository, $aSelect[1][0] & " /singleInstall"), "", @SW_HIDE)
+				RunWait(StringFormat('%s%s', $sRepository, $aSelect[1][0] & " /singleInstall"), "", @SW_HIDE)		
 			Else
-				RunWait(StringFormat('%s\%s', $sRepository, $aSelect[1][0] & " /singleInstall"))
+				$sInstall = $sRepository & $aSelect[1][0]
+				$sStringSearch = StringInStr($sInstall, ".lnk")
+				
+				If $sStringSearch = 0 Then 
+					RunWait(StringFormat('%s%s', $sRepository, $aSelect[1][0] & " /singleInstall"))
+				Else					
+					RunWait(@ComSpec & " /c " & StringFormat('"%s%s"', $sRepository, $aSelect[1][0]))
+				EndIf
 			EndIf
-			GUIDelete($hWnd_FormStatus)
 
+			GUIDelete($hWnd_FormStatus)
 			WinActivate($hWnd_Main)
+
 		EndIf
 	EndIf
 EndFunc   ;==>instalar
@@ -422,8 +456,8 @@ Func instalarLista()
 			$iPID = Run($sRepository & $aSelect[1][2] & " /MultipleInstall", "", @SW_HIDE, $STDOUT_CHILD)
 			ProcessWaitClose($iPID)
 			$sOutput = StdoutRead($iPID)
-
-			If $sOutput = "True" Then
+			
+			If StringInStr($sOutput, "True") Then
 				_ArrayAdd($aResult, $aReturn[$i][0] & '|' & $aReturn[$i][1] & '|' & "Sucesso")
 			Else
 				_ArrayAdd($aResult, $aReturn[$i][0] & '|' & $aReturn[$i][1] & '|' & "Falha")
@@ -537,7 +571,17 @@ Func salvar()
 			If UBound($aSelect) - 1 = 0 Then
 				GUICtrlSetState($idBtn_Path, $GUI_DISABLE)
 				GUICtrlSetState($idBtn_Salvar, $GUI_DISABLE)
-				$sQuestion = MsgBox($MB_ICONQUESTION + $MB_TOPMOST + $MB_YESNO, "RunMe", "Gostaria de copiar também todo o conteudo da pasta onde se encontra o executável?")
+				
+				Local $sQuestion = False
+				
+				_AD_Open()
+				_DBStart()
+				If _AD_IsMemberOf("SJK-DM") Then
+					$sQuestion = MsgBox($MB_ICONQUESTION + $MB_TOPMOST + $MB_YESNO, "RunMe", "Gostaria de copiar também todo o conteudo da pasta onde se encontra o executável?")			
+				EndIf
+				_DBStop()
+				_AD_Close()
+				
 				Local $hWnd_FormStatus = GUICreate("", 461, 235, 77, 58, $WS_POPUPWINDOW, $WS_EX_MDICHILD, $hWnd_Edit)
 				Local $aGetPos = WinGetPos($hWnd_FormStatus)
 				GUISetBkColor($COLOR_WHITE)
@@ -545,7 +589,6 @@ Func salvar()
 				GUICtrlCreateLabel("Importando dados.....", 0, 91, $aGetPos[2] - 2, 21, $SS_CENTER)
 				Local $idProgress1 = GUICtrlCreateProgress(104, 121, 252, 11, 0x8)
 				_SendMessage(GUICtrlGetHandle($idProgress1), $PBM_SETMARQUEE, 1, 30)
-;~ WinSetTrans($hWnd_Edit, '', 150)
 				GUISetState(@SW_SHOW)
 				Sleep(2000)
 				Local $sRepoDest = $sRepository & '\Repository\' & $oApp.nome & '_' & $oApp.versao
@@ -554,24 +597,50 @@ Func salvar()
 				Local $aPathSplit = _PathSplit($oApp.path, $sDrive, $sDir, $sFileName, $sExtension)
 				Local $sParameter = $oApp.parametro
 				Local $sSoftware = $sFileName & $sExtension
+				Local $sCleanSoftware = $sFileName & $sExtension
 				If $oApp.parametro <> '' Then
 					$sSoftware &= ' ' & $oApp.parametro
 				EndIf
 
-				_AD_Open()
-				_DBStart()
-				If _AD_IsMemberOf("SJK-DM") Then
-					_SQLite_Exec(-1, StringFormat("Insert Into Softwares VALUES('%s', '%s', '%s', '\Repository\%s_%s\%s', '%s')", $oApp.nome, $oApp.versao, $oApp.descricao, $oApp.nome, $oApp.versao, $sSoftware, "SYSTEM"))
-				Else
-					_SQLite_Exec(-1, StringFormat("Insert Into Softwares VALUES('%s', '%s', '%s', '\Repository\%s_%s\%s', '%s')", $oApp.nome, $oApp.versao, $oApp.descricao, $oApp.nome, $oApp.versao, $sSoftware, StringUpper(@UserName)))
-				EndIf
-				_DBStop()
-				_AD_Close()
-
 				If $sQuestion = $IDYES Then
 					RunWait(@ComSpec & ' /c xcopy /Y /E /C "' & $sDrive & StringTrimRight($sDir, 1) & '" "' & $sRepoDest & '"', '', @SW_HIDE)
-				Else
+					_AD_Open()
+					_DBStart()
+					If _AD_IsMemberOf("SJK-DM") Then
+						_SQLite_Exec(-1, StringFormat("Insert Into Softwares VALUES('%s', '%s', '%s', '\Repository\%s_%s\%s', '%s')", $oApp.nome, $oApp.versao, $oApp.descricao, $oApp.nome, $oApp.versao, $sSoftware, "SYSTEM"))
+					Else
+						_SQLite_Exec(-1, StringFormat("Insert Into Softwares VALUES('%s', '%s', '%s', '\Repository\%s_%s\%s', '%s')", $oApp.nome, $oApp.versao, $oApp.descricao, $oApp.nome, $oApp.versao, $sSoftware, StringUpper(@UserName)))
+					EndIf
+					_DBStop()
+					_AD_Close()
+				EndIf
+				
+				If $sQuestion = $IDNO Then
 					FileCopy($sDrive & $sDir & $sFileName & $sExtension, $sRepository & '\Repository\' & $oApp.nome & '_' & $oApp.versao & '\' & $sFileName & $sExtension, 9)
+					_AD_Open()
+					_DBStart()
+					If _AD_IsMemberOf("SJK-DM") Then
+						_SQLite_Exec(-1, StringFormat("Insert Into Softwares VALUES('%s', '%s', '%s', '\Repository\%s_%s\%s', '%s')", $oApp.nome, $oApp.versao, $oApp.descricao, $oApp.nome, $oApp.versao, $sSoftware, "SYSTEM"))
+					Else
+						_SQLite_Exec(-1, StringFormat("Insert Into Softwares VALUES('%s', '%s', '%s', '\Repository\%s_%s\%s', '%s')", $oApp.nome, $oApp.versao, $oApp.descricao, $oApp.nome, $oApp.versao, $sSoftware, StringUpper(@UserName)))
+					EndIf
+					_DBStop()
+					_AD_Close()
+				EndIf
+
+				If $sQuestion = False Then
+					DirCreate($sRepository & '\Repository\' & $oApp.nome & '_' & $oApp.versao)
+					FileCreateShortcut($sDrive & $sDir & $sFileName & $sExtension, $sRepository & '\Repository\' & $oApp.nome & '_' & $oApp.versao & '\' & $sFileName & ".lnk")
+					$sShortcut = '\Repository\' & $oApp.nome & '_' & $oApp.versao & '\' & $sFileName & ".lnk"
+					_AD_Open()
+					_DBStart()
+					If _AD_IsMemberOf("SJK-DM") Then
+						_SQLite_Exec(-1, StringFormat("Insert Into Softwares VALUES('%s', '%s', '%s', '%s', '%s')", $oApp.nome, $oApp.versao, $oApp.descricao, $sShortcut, "SYSTEM"))
+					Else
+						_SQLite_Exec(-1, StringFormat("Insert Into Softwares VALUES('%s', '%s', '%s', '%s', '%s')", $oApp.nome, $oApp.versao, $oApp.descricao, $sShortcut, StringUpper(@UserName)))
+					EndIf
+					_DBStop()
+					_AD_Close()
 				EndIf
 
 				redefinirVariavelApp()
