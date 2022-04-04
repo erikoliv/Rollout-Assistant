@@ -1,3 +1,9 @@
+#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_Icon=..\..\..\Backup Erik\Desktop\Empacotamentos\Icons\Stefanini_Globe.ico
+#AutoIt3Wrapper_Compression=4
+#AutoIt3Wrapper_Res_Language=1033
+#AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
+#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #NoTrayIcon
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\..\..\Desktop\Stefanini_Globe.ico
@@ -15,7 +21,6 @@
 	Backup e mapeamento automático de drives de rede.
 
 #ce ----------------------------------------------------------------------------
-
 
 ;~ #include <UDF_Embedded.au3>
 #include "..\UDF\UDF_Embedded.au3"
@@ -138,7 +143,7 @@ Func _SetAllNetworkDrivers()
 		For $i = 1 To $iRows
 			Sleep(1000)
 			GUICtrlSetData($lblInstall, "Mapeando" & @CRLF & $aSelect[$i][0] & $aSelect[$i][1])
-			DriveMapAdd($aSelect[$i][0], $aSelect[$i][1])
+			DriveMapAdd($aSelect[$i][0], $aSelect[$i][1], $DMA_PERSISTENT)
 		Next
 	EndIf
 	

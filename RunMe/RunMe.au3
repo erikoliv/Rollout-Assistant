@@ -1,7 +1,7 @@
 #NoTrayIcon
 #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Icon=..\..\..\..\Downloads\Stefanini_Globe.ico
+#AutoIt3Wrapper_Icon=..\..\..\Backup Erik\Desktop\Empacotamentos\Icons\Stefanini_Globe.ico
 #AutoIt3Wrapper_Compression=4
 #AutoIt3Wrapper_Res_Language=1033
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
@@ -281,27 +281,28 @@ Func remover()
 					Else
 						MsgBox(262144 + 16, 'RunMe', 'Houve um erro ao tentar remover o item selecionado', 30, $hWnd_Main)
 					EndIf
-				Else
-					MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "RunMe", "Você não possui permissão para deletar este item!")
 				EndIf
 			Else
-				Local $sTarget = StringFormat("\" & $sRepository & '\Repository\%s_%s', $aGetItem[1], $aGetItem[2])
-				Local $iQuestion = MsgBox(262144 + 32 + 4, 'RunMe', 'Tem certeza que deseja remover o item ' & $aGetItem[1] & '?', 30, $hWnd_Main)
-				If $iQuestion = 6 Then
-					DirRemove($sTarget, 1)
-					If Not FileExists($sTarget) Then
-						_DBStart()
-						_SQLite_Exec(-1, StringFormat("Delete from Softwares Where Name like '%s' And Version like '%s'", $aGetItem[1], $aGetItem[2]))
-						_DBStop()
-						_GUICtrlListView_DeleteItemsSelected($ListView1)
-						GUICtrlSetData($ListView1, 'Software (' & _GUICtrlListView_GetItemCount($ListView1) & ')|Versão|Descrição')
-					Else
-						MsgBox(262144 + 16, 'RunMe', 'Houve um erro ao tentar remover o item selecionado', 30, $hWnd_Main)
-					EndIf
-				EndIf
+				MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "RunMe", "Você não possui permissão para deletar este item!")
 			EndIf
 			_AD_Close()
+		Else
+			Local $sTarget = StringFormat("\" & $sRepository & '\Repository\%s_%s', $aGetItem[1], $aGetItem[2])
+			Local $iQuestion = MsgBox(262144 + 32 + 4, 'RunMe', 'Tem certeza que deseja remover o item ' & $aGetItem[1] & '?', 30, $hWnd_Main)
+			If $iQuestion = 6 Then
+				DirRemove($sTarget, 1)
+				If Not FileExists($sTarget) Then
+					_DBStart()
+					_SQLite_Exec(-1, StringFormat("Delete from Softwares Where Name like '%s' And Version like '%s'", $aGetItem[1], $aGetItem[2]))
+					_DBStop()
+					_GUICtrlListView_DeleteItemsSelected($ListView1)
+					GUICtrlSetData($ListView1, 'Software (' & _GUICtrlListView_GetItemCount($ListView1) & ')|Versão|Descrição')
+				Else
+					MsgBox(262144 + 16, 'RunMe', 'Houve um erro ao tentar remover o item selecionado', 30, $hWnd_Main)
+				EndIf
+			EndIf
 		EndIf
+		
 	EndIf
 EndFunc   ;==>remover
 
@@ -334,14 +335,14 @@ Func instalar()
 			Sleep(2000)
 
 			If $aSelect[1][1] = "SYSTEM" Then
-				RunWait(StringFormat('%s%s', $sRepository, $aSelect[1][0] & " /singleInstall"), "", @SW_HIDE)		
+				RunWait(StringFormat('%s%s', $sRepository, $aSelect[1][0] & " /singleInstall"), "", @SW_HIDE)
 			Else
 				$sInstall = $sRepository & $aSelect[1][0]
 				$sStringSearch = StringInStr($sInstall, ".lnk")
 				
-				If $sStringSearch = 0 Then 
+				If $sStringSearch = 0 Then
 					RunWait(StringFormat('%s%s', $sRepository, $aSelect[1][0] & " /singleInstall"))
-				Else					
+				Else
 					RunWait(@ComSpec & " /c " & StringFormat('"%s%s"', $sRepository, $aSelect[1][0]))
 				EndIf
 			EndIf
@@ -450,23 +451,27 @@ Func instalarLista()
 
 		For $i = 1 To UBound($aReturn) - 1
 			_DBStart()
-			_SQLite_GetTable2d(-1, StringFormat("Select Name, Version, Repository from Softwares Where Name Like '%s' And Version Like '%s'", $aReturn[$i][0], $aReturn[$i][1]), $aSelect, $iRows, $iColumns)
+			_SQLite_GetTable2d(-1, StringFormat("Select Name, Version, Repository, UserName from Softwares Where Name Like '%s' And Version Like '%s'", $aReturn[$i][0], $aReturn[$i][1]), $aSelect, $iRows, $iColumns)
 			_DBStop()
 			GUICtrlSetData($sLabel_Status, StringFormat('Instalando o %s', $aSelect[1][0]))
 			$iPID = Run($sRepository & $aSelect[1][2] & " /MultipleInstall", "", @SW_HIDE, $STDOUT_CHILD)
 			ProcessWaitClose($iPID)
 			$sOutput = StdoutRead($iPID)
 			
-			If StringInStr($sOutput, "True") Then
-				_ArrayAdd($aResult, $aReturn[$i][0] & '|' & $aReturn[$i][1] & '|' & "Sucesso")
+			If $aSelect[1][3] = "SYSTEM" Then
+				If StringInStr($sOutput, "True") Then
+					_ArrayAdd($aResult, $aReturn[$i][0] & '|' & $aReturn[$i][1] & '|' & "Sucesso")
+				Else
+					_ArrayAdd($aResult, $aReturn[$i][0] & '|' & $aReturn[$i][1] & '|' & "Falha")
+				EndIf
 			Else
-				_ArrayAdd($aResult, $aReturn[$i][0] & '|' & $aReturn[$i][1] & '|' & "Falha")
+				_ArrayAdd($aResult, $aReturn[$i][0] & '|' & $aReturn[$i][1] & '|' & "Executado")
 			EndIf
 
 			$p = ($i * 100) / (UBound($aReturn) - 1)
 			GUICtrlSetData($idProgress_Status, $p)
 		Next
-;~ _GUIDisable($hWnd_Main, '')
+
 	EndIf
 	Sleep(1500)
 	GUICtrlSetData($sLabel_Status, "")
@@ -577,7 +582,7 @@ Func salvar()
 				_AD_Open()
 				_DBStart()
 				If _AD_IsMemberOf("SJK-DM") Then
-					$sQuestion = MsgBox($MB_ICONQUESTION + $MB_TOPMOST + $MB_YESNO, "RunMe", "Gostaria de copiar também todo o conteudo da pasta onde se encontra o executável?")			
+					$sQuestion = MsgBox($MB_ICONQUESTION + $MB_TOPMOST + $MB_YESNO, "RunMe", "Gostaria de copiar também todo o conteudo da pasta onde se encontra o executável?")
 				EndIf
 				_DBStop()
 				_AD_Close()
