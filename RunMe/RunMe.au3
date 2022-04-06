@@ -358,8 +358,15 @@ EndFunc   ;==>instalar
 Func _LoadData()
 
 	_DBStart()
-	_SQLite_GetTable2d(-1, "SELECT * FROM Softwares Where UserName ='SYSTEM' or UserName = '" & StringUpper(@UserName) & "';", $aSelect, $iRows, $iColumns)
+	_AD_Open()
+	If _AD_IsMemberOf("SJK-DM") Then 
+		_SQLite_GetTable2d(-1, "SELECT * FROM Softwares", $aSelect, $iRows, $iColumns)
+	Else
+		_SQLite_GetTable2d(-1, "SELECT * FROM Softwares Where UserName ='SYSTEM' or UserName = '" & StringUpper(@UserName) & "';", $aSelect, $iRows, $iColumns)
+	EndIf
+	_AD_Close()
 	_DBStop()
+
 	If IsArray($aSelect) Then
 		If UBound($aSelect) - 1 > 0 Then
 
@@ -442,7 +449,6 @@ Func instalarLista()
 	GUICtrlSetState($idBtn_Instalar_M, $GUI_DISABLE)
 	Local $aReturn = _GUICtrlListView_CreateArray($ListView2)
 	If IsArray($aReturn) Then
-;~ _GUIDisable($hWnd_Main)
 		WinActivate($hWnd_MultiInstall)
 		GUICtrlSetData($idProgress_Status, 0)
 		GUICtrlSetState($idProgress_Status, $GUI_SHOW)
@@ -454,17 +460,18 @@ Func instalarLista()
 			_SQLite_GetTable2d(-1, StringFormat("Select Name, Version, Repository, UserName from Softwares Where Name Like '%s' And Version Like '%s'", $aReturn[$i][0], $aReturn[$i][1]), $aSelect, $iRows, $iColumns)
 			_DBStop()
 			GUICtrlSetData($sLabel_Status, StringFormat('Instalando o %s', $aSelect[1][0]))
-			$iPID = Run($sRepository & $aSelect[1][2] & " /MultipleInstall", "", @SW_HIDE, $STDOUT_CHILD)
-			ProcessWaitClose($iPID)
-			$sOutput = StdoutRead($iPID)
 			
 			If $aSelect[1][3] = "SYSTEM" Then
+				$iPID = Run($sRepository & $aSelect[1][2] & " /MultipleInstall", "", @SW_HIDE, $STDOUT_CHILD)
+				ProcessWaitClose($iPID)
+				$sOutput = StdoutRead($iPID)
 				If StringInStr($sOutput, "True") Then
 					_ArrayAdd($aResult, $aReturn[$i][0] & '|' & $aReturn[$i][1] & '|' & "Sucesso")
 				Else
 					_ArrayAdd($aResult, $aReturn[$i][0] & '|' & $aReturn[$i][1] & '|' & "Falha")
 				EndIf
 			Else
+				ShellExecuteWait($sRepository & $aSelect[1][2])
 				_ArrayAdd($aResult, $aReturn[$i][0] & '|' & $aReturn[$i][1] & '|' & "Executado")
 			EndIf
 
